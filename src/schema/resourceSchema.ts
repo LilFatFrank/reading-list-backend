@@ -2,6 +2,9 @@ import mongoose from "mongoose";
 
 const resourceSchema = new mongoose.Schema(
   {
+    title: String,
+    image: String,
+    description: String,
     url: {
       type: String,
       requrired: true,

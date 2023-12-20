@@ -14,8 +14,8 @@ const chatResourceStates = new Map();
 
 bot.onText(/\/add/, (msg) => {
   const chatId = msg.chat.id;
-  chatResourceStates.set(chatId, { step: "awaiting_title", data: {} });
-  bot.sendMessage(chatId, "Please send the title of the resource:");
+  chatResourceStates.set(chatId, { step: "awaiting_url", data: {} });
+  bot.sendMessage(chatId, "Please send the URL of the resource:");
 });
 
 bot.on("message", (msg) => {
@@ -27,11 +27,6 @@ bot.on("message", (msg) => {
   if (!state) return;
 
   switch (state.step) {
-    case "awaiting_title":
-      state.data.title = msg.text;
-      state.step = "awaiting_url";
-      bot.sendMessage(chatId, "Please send the URL of the resource:");
-      break;
     case "awaiting_url":
       state.data.url = msg.text;
       state.step = "awaiting_type";

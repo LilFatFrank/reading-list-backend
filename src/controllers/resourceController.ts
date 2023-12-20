@@ -6,9 +6,17 @@ import { Types } from "mongoose";
 
 export const addResource = async (req: Request, res: Response) => {
   try {
+
+    const preview = await axios.get(
+      `https://jsonlink.io/api/extract?url=${req.body.url}&api_key=${config.metadataApiKey}`
+    );
+    const { title, images, description, url } = preview.data;
+
     const resource = new Resource({
-      title: req.body.title,
-      url: req.body.url,
+      title,
+      image: images[0],
+      description,
+      url,
       type: req.body.type,
       category: req.body.category,
       upVotes: 0,
@@ -74,7 +82,7 @@ async function getPaginatedItems(
   // Determine if there's a next page
   let hasNextPage = items.length === limit;
 
-  const previewPromises = items.map(
+  /* const previewPromises = items.map(
     async ({ url, type, category, createdAt, upVotes, _id }) => {
       return axios
         .get(
@@ -102,19 +110,17 @@ async function getPaginatedItems(
     if (result.status === "fulfilled") {
       return result.value;
     }
-  });
+  }); */
 
   // ID to start after for the next page
   const nextPageCursor = items.length > 0 ? items[items.length - 1]._id : null;
 
-  return { items: previews, nextPageCursor, hasNextPage };
+  return { items, nextPageCursor, hasNextPage };
 }
 
 export const addPoint = async (req: Request, res: Response) => {
   try {
     const { itemId } = req.body;
-
-    console.log(itemId);
 
     if (!Types.ObjectId.isValid(itemId)) {
       return res.status(400).send("Invalid ObjectId");
