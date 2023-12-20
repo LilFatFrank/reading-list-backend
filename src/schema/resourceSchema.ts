@@ -2,10 +2,6 @@ import mongoose from "mongoose";
 
 const resourceSchema = new mongoose.Schema(
   {
-    title: {
-      type: String,
-      requrired: true,
-    },
     url: {
       type: String,
       requrired: true,

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import config from "../config";
 import axios from "axios";
 import Resource from "../schema/resourceSchema";
+import { Types } from "mongoose";
 
 export const addResource = async (req: Request, res: Response) => {
   try {
@@ -55,7 +56,7 @@ async function getPaginatedItems(
   }
 
   if (searchTitle) {
-    query.title = { $regex: new RegExp(searchTitle, 'i') };
+    query.title = { $regex: new RegExp(searchTitle, "i") };
   }
 
   if (categories && categories.length > 0) {
@@ -73,20 +74,27 @@ async function getPaginatedItems(
   // Determine if there's a next page
   let hasNextPage = items.length === limit;
 
-  const previewPromises = items.map(async ({url}) => {
-    return axios
-      .get(
-        `https://jsonlink.io/api/extract?url=${url}&api_key=${config.metadataApiKey}`
-      )
-      .then((response) => {
-        return {
-          title: response.data.title,
-          description: response.data.description,
-          image: response.data.images[0],
-          url: response.data.url,
-        };
-      });
-  });
+  const previewPromises = items.map(
+    async ({ url, type, category, createdAt, upVotes, _id }) => {
+      return axios
+        .get(
+          `https://jsonlink.io/api/extract?url=${url}&api_key=${config.metadataApiKey}`
+        )
+        .then((response) => {
+          return {
+            title: searchTitle,
+            description: response.data.description,
+            image: response.data.images[0],
+            url: response.data.url,
+            type,
+            category,
+            createdAt,
+            upVotes,
+            id: _id,
+          };
+        });
+    }
+  );
 
   const results = await Promise.allSettled(previewPromises);
 
@@ -101,3 +109,29 @@ async function getPaginatedItems(
 
   return { items: previews, nextPageCursor, hasNextPage };
 }
+
+export const addPoint = async (req: Request, res: Response) => {
+  try {
+    const { itemId } = req.body;
+
+    console.log(itemId);
+
+    if (!Types.ObjectId.isValid(itemId)) {
+      return res.status(400).send("Invalid ObjectId");
+    }
+
+    const item = await Resource.findByIdAndUpdate(
+      itemId,
+      { $inc: { upVotes: 1 } },
+      { new: true, runValidators: true }
+    );
+
+    if (!item) {
+      return res.status(404).send("Item not found");
+    }
+
+    res.json({ upVotes: item.upVotes });
+  } catch (error: any) {
+    res.status(500).send(error.message);
+  }
+};

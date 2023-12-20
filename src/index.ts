@@ -5,7 +5,12 @@ import mongoose from 'mongoose';
 import config from './config';
 import router from './routes/resouceRoutes';
 
+const cors = require("cors");
+
 const app = express();
+app.use(cors({
+  origin: 'http://localhost:3000'
+}));
 
 app.use(express.json());
 app.use('/reading-list', router);
