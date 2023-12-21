@@ -71,10 +71,13 @@ async function getPaginatedItems(
     query.category = { $in: categories };
   }
 
-  let queryOptions = { limit: limit, sort: { _id: 1 } };
+  let queryOptions = { limit: limit, sort: { createdAt: -1 } };
 
   if (startAfterId) {
-    query._id = { $gt: startAfterId };
+    const startAfter = await Resource.findById(startAfterId);
+    if (startAfter && startAfter.createdAt) {
+      query.createdAt = { $lt: startAfter.createdAt };
+    }
   }
 
   const items = await Resource.find(query, null, queryOptions);
@@ -82,38 +85,8 @@ async function getPaginatedItems(
   // Determine if there's a next page
   let hasNextPage = items.length === limit;
 
-  /* const previewPromises = items.map(
-    async ({ url, type, category, createdAt, upVotes, _id }) => {
-      return axios
-        .get(
-          `https://jsonlink.io/api/extract?url=${url}&api_key=${config.metadataApiKey}`
-        )
-        .then((response) => {
-          return {
-            title: searchTitle,
-            description: response.data.description,
-            image: response.data.images[0],
-            url: response.data.url,
-            type,
-            category,
-            createdAt,
-            upVotes,
-            id: _id,
-          };
-        });
-    }
-  );
-
-  const results = await Promise.allSettled(previewPromises);
-
-  const previews = results.map((result) => {
-    if (result.status === "fulfilled") {
-      return result.value;
-    }
-  }); */
-
   // ID to start after for the next page
-  const nextPageCursor = items.length > 0 ? items[items.length - 1]._id : null;
+  const nextPageCursor = hasNextPage ? items[items.length - 1]._id.toString() : null;
 
   return { items, nextPageCursor, hasNextPage };
 }
